@@ -1,0 +1,16 @@
+<?php
+$l['default_avatars_name'] = 'Default Avatars';
+$l['default_avatars_description'] = 'Adds a secure, categorized avatar gallery to the User Control Panel.';
+$l['default_avatars_settings_description'] = 'Configure where gallery images are discovered and published.';
+$l['default_avatars_directory'] = 'Avatar gallery directory';
+$l['default_avatars_directory_description'] = 'Directory relative to the MyBB root. Absolute paths and parent-directory segments are rejected.';
+$l['default_avatars_url'] = 'Avatar gallery URL path';
+$l['default_avatars_url_description'] = 'Public path relative to the board URL.';
+$l['default_avatars_extensions'] = 'Allowed image extensions';
+$l['default_avatars_extensions_description'] = 'Comma-separated subset of png, jpg, jpeg, gif, and webp.';
+$l['default_avatars_gallery_title'] = 'Choose a Default Avatar';
+$l['default_avatars_gallery_description'] = 'Select an avatar from one of the collections below.';
+$l['default_avatars_general_collection'] = 'General';
+$l['default_avatars_empty'] = 'No default avatars are currently available.';
+$l['default_avatars_choose'] = 'Use {1}';
+$l['default_avatars_invalid'] = 'The selected default avatar is invalid or no longer available.';
