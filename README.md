@@ -11,7 +11,7 @@ Adds a selectable, categorized avatar gallery to MyBB's User Control Panel. Imag
 
 ## Installation
 
-1. Copy `inc/` into the matching directory of a MyBB 1.8 installation.
+1. Copy the contents of `Upload/` into the root of a MyBB 1.8 installation.
 2. Add images to `images/avatars` (subdirectories become collections).
 3. Install and activate **Avatar Gallery** in **ACP → Configuration → Plugins**.
 4. Optionally edit **ACP → Configuration → Settings → Avatar Gallery**.
@@ -21,9 +21,12 @@ Users select an image at **User CP → Change Avatar**.
 ## Development
 
 ```bash
-php -l inc/plugins/default_avatars.php
-php -l inc/languages/english/default_avatars.lang.php
+php -l Upload/inc/plugins/default_avatars.php
+php -l Upload/inc/languages/english/default_avatars.lang.php
+php tests/default_avatars_test.php
 ```
+
+Tagged releases package `Upload`, `README.md`, `LICENSE`, and `CHANGELOG.md` into a `mybb-avatar-gallery-{version}.zip` archive.
 
 Created for [Space Cadet issue #36](https://gitea.rcs1.top/sickprodigy/mybb_space-cadet_theme/issues/36).
 

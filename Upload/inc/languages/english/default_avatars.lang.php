@@ -1,5 +1,5 @@
 <?php
-$l['default_avatars_name'] = 'Default Avatars';
+$l['default_avatars_name'] = 'Avatar Gallery';
 $l['default_avatars_description'] = 'Adds a secure, categorized avatar gallery to the User Control Panel.';
 $l['default_avatars_settings_description'] = 'Configure where gallery images are discovered and published.';
 $l['default_avatars_directory'] = 'Avatar gallery directory';
