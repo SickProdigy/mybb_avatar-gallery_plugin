@@ -7,7 +7,7 @@ Adds a selectable, categorized avatar gallery to MyBB's User Control Panel. Imag
 - Discovers PNG, JPEG, GIF, and WebP images.
 - Validates selections server-side and rejects traversal and escaping symlinks.
 - Works independently of upload and remote-avatar permissions.
-- Configurable filesystem directory, public path, and extensions.
+- Configurable filesystem directory, public path, extensions, and default collection.
 
 ## Installation
 
@@ -17,6 +17,8 @@ Adds a selectable, categorized avatar gallery to MyBB's User Control Panel. Imag
 4. Optionally edit **ACP → Configuration → Settings → Avatar Gallery**.
 
 Users select an image at **User CP → Change Avatar**.
+
+The gallery directory is the filesystem path MyBB scans for image files. The gallery URL path is the public browser path used to display those same images; both commonly use `images/avatars`, but they can differ on custom deployments.
 
 ## Development
 

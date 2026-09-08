@@ -33,17 +33,35 @@ function default_avatars_is_installed()
 
 function default_avatars_install()
 {
+    default_avatars_remove_settings();
+    default_avatars_ensure_settings();
+}
+
+function default_avatars_ensure_settings()
+{
     global $db, $lang;
     $lang->load('default_avatars');
-    default_avatars_remove_settings();
-    $gid = (int)$db->insert_query('settinggroups', array(
-        'name' => 'default_avatars', 'title' => $db->escape_string($lang->default_avatars_name),
-        'description' => $db->escape_string($lang->default_avatars_settings_description), 'disporder' => 50, 'isdefault' => 0
-    ));
+    $gid = (int)$db->fetch_field($db->simple_select('settinggroups', 'gid', "name='default_avatars'"), 'gid');
+
+    if(!$gid) {
+        $gid = (int)$db->insert_query('settinggroups', array(
+            'name' => 'default_avatars', 'title' => $db->escape_string($lang->default_avatars_name),
+            'description' => $db->escape_string($lang->default_avatars_settings_description), 'disporder' => 50, 'isdefault' => 0
+        ));
+    } else {
+        $db->update_query('settinggroups', array(
+            'title' => $db->escape_string($lang->default_avatars_name),
+            'description' => $db->escape_string($lang->default_avatars_settings_description),
+            'disporder' => 50,
+            'isdefault' => 0
+        ), "gid='{$gid}'", 1);
+    }
+
     $settings = array(
         array('name' => 'default_avatars_directory', 'title' => $lang->default_avatars_directory, 'description' => $lang->default_avatars_directory_description, 'value' => 'images/avatars'),
         array('name' => 'default_avatars_url', 'title' => $lang->default_avatars_url, 'description' => $lang->default_avatars_url_description, 'value' => 'images/avatars'),
-        array('name' => 'default_avatars_extensions', 'title' => $lang->default_avatars_extensions, 'description' => $lang->default_avatars_extensions_description, 'value' => 'png,jpg,jpeg,gif,webp')
+        array('name' => 'default_avatars_extensions', 'title' => $lang->default_avatars_extensions, 'description' => $lang->default_avatars_extensions_description, 'value' => 'png,jpg,jpeg,gif,webp'),
+        array('name' => 'default_avatars_default_collection', 'title' => $lang->default_avatars_default_collection, 'description' => $lang->default_avatars_default_collection_description, 'value' => '')
     );
     foreach($settings as $order => $setting)
     {
@@ -52,13 +70,20 @@ function default_avatars_install()
         $setting['optionscode'] = 'text';
         $setting['disporder'] = $order + 1;
         $setting['gid'] = $gid;
-        $db->insert_query('settings', $setting);
+        $sid = (int)$db->fetch_field($db->simple_select('settings', 'sid', "name='".$db->escape_string($setting['name'])."'", array('limit' => 1)), 'sid');
+
+        if($sid) {
+            unset($setting['value']);
+            $db->update_query('settings', $setting, "sid='{$sid}'", 1);
+        } else {
+            $db->insert_query('settings', $setting);
+        }
     }
     rebuild_settings();
 }
 
 function default_avatars_uninstall() { default_avatars_remove_settings(); rebuild_settings(); }
-function default_avatars_activate() {}
+function default_avatars_activate() { default_avatars_ensure_settings(); }
 function default_avatars_deactivate() {}
 
 function default_avatars_remove_settings()
@@ -82,16 +107,18 @@ function default_avatars_render_gallery()
     if(!$collections) {
         $content = '<p class="smalltext">'.htmlspecialchars_uni($lang->default_avatars_empty).'</p>';
     } else {
+        $default_collection = default_avatars_default_collection($collections);
         $select = '<label class="default-avatars-category-label" for="default_avatars_category">'.htmlspecialchars_uni($lang->default_avatars_category_label).'</label>'
-            . '<select id="default_avatars_category" class="default-avatars-category" autocomplete="off">'
-            . '<option value="">'.htmlspecialchars_uni($lang->default_avatars_select_collection).'</option>';
+            . '<select id="default_avatars_category" class="default-avatars-category" autocomplete="off">';
         $panels = '';
         $index = 0;
 
         foreach($collections as $collection => $avatars) {
             $panel = 'default_avatars_collection_'.$index++;
-            $select .= '<option value="'.$panel.'">'.htmlspecialchars_uni(default_avatars_collection_label($collection)).'</option>';
-            $panels .= '<div class="default-avatars-panel" id="'.$panel.'" hidden><div class="default-avatars-grid">';
+            $selected = $collection === $default_collection ? ' selected="selected"' : '';
+            $hidden = $collection === $default_collection ? '' : ' hidden';
+            $select .= '<option value="'.$panel.'"'.$selected.'>'.htmlspecialchars_uni(default_avatars_collection_label($collection)).'</option>';
+            $panels .= '<div class="default-avatars-panel" id="'.$panel.'"'.$hidden.'><div class="default-avatars-grid">';
 
             foreach($avatars as $avatar) {
                 $path = htmlspecialchars_uni($avatar['relative']);
@@ -187,5 +214,25 @@ function default_avatars_collection_label($collection)
 {
     global $lang;
     return $collection === '' ? $lang->default_avatars_general_collection : implode(' / ', array_map('default_avatars_display_name', explode('/', $collection)));
+}
+function default_avatars_default_collection($collections)
+{
+    global $mybb;
+    $configured = trim(isset($mybb->settings['default_avatars_default_collection']) ? $mybb->settings['default_avatars_default_collection'] : '');
+    $configured = str_replace('\\', '/', $configured);
+    $configured = trim($configured, '/');
+
+    if($configured !== '' && isset($collections[$configured])) {
+        return $configured;
+    }
+
+    foreach(array_keys($collections) as $collection) {
+        if($collection !== '') {
+            return $collection;
+        }
+    }
+
+    $keys = array_keys($collections);
+    return $keys ? $keys[0] : '';
 }
 function default_avatars_display_name($name) { return ucwords(trim(preg_replace('/\s+/', ' ', str_replace(array('-', '_'), ' ', $name)))); }

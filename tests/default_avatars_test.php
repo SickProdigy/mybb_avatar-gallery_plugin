@@ -57,12 +57,103 @@ class DefaultAvatarsTestPlugins
     }
 }
 
+class DefaultAvatarsTestQuery
+{
+    public $row;
+
+    public function __construct($row)
+    {
+        $this->row = $row;
+    }
+}
+
+class DefaultAvatarsTestDatabase
+{
+    public $group = array();
+    public $settings = array();
+    private $next_setting_id = 1;
+
+    public function simple_select($table, $fields, $where, $options = array())
+    {
+        if($table === 'settinggroups') {
+            return new DefaultAvatarsTestQuery($this->group);
+        }
+
+        preg_match("/name='([^']+)'/", $where, $matches);
+        $name = isset($matches[1]) ? stripslashes($matches[1]) : '';
+
+        return new DefaultAvatarsTestQuery(isset($this->settings[$name]) ? $this->settings[$name] : array());
+    }
+
+    public function fetch_field($query, $field)
+    {
+        return isset($query->row[$field]) ? $query->row[$field] : null;
+    }
+
+    public function insert_query($table, $values)
+    {
+        if($table === 'settinggroups') {
+            $values['gid'] = 7;
+            $this->group = $values;
+            return 7;
+        }
+
+        $values['sid'] = $this->next_setting_id++;
+        $this->settings[$values['name']] = $values;
+
+        return $values['sid'];
+    }
+
+    public function update_query($table, $values, $where, $limit = 0)
+    {
+        if($table === 'settinggroups') {
+            $this->group = array_merge($this->group, $values);
+            return;
+        }
+
+        preg_match("/sid='([0-9]+)'/", $where, $matches);
+        $sid = isset($matches[1]) ? (int)$matches[1] : 0;
+
+        foreach($this->settings as $name => $setting) {
+            if((int)$setting['sid'] === $sid) {
+                $this->settings[$name] = array_merge($setting, $values);
+                return;
+            }
+        }
+    }
+
+    public function delete_query($table, $where)
+    {
+        if($table === 'settinggroups') {
+            $this->group = array();
+        }
+
+        if($table === 'settings') {
+            $this->settings = array();
+        }
+    }
+
+    public function escape_string($value)
+    {
+        return addslashes($value);
+    }
+}
+
 class DefaultAvatarsTestLang
 {
+    public $default_avatars_name = 'Avatar Gallery';
+    public $default_avatars_settings_description = 'Configure where gallery images are discovered and published.';
+    public $default_avatars_directory = 'Avatar gallery directory';
+    public $default_avatars_directory_description = 'Filesystem directory.';
+    public $default_avatars_url = 'Avatar gallery URL path';
+    public $default_avatars_url_description = 'Public URL path.';
+    public $default_avatars_extensions = 'Allowed image extensions';
+    public $default_avatars_extensions_description = 'Allowed extensions.';
+    public $default_avatars_default_collection = 'Default collection';
+    public $default_avatars_default_collection_description = 'Optional folder path to show first.';
     public $default_avatars_gallery_title = 'Default Avatars';
     public $default_avatars_gallery_description = 'Select an avatar from one of the collections below.';
     public $default_avatars_category_label = 'Category';
-    public $default_avatars_select_collection = 'Select a collection...';
     public $default_avatars_general_collection = 'General';
     public $default_avatars_empty = 'No default avatars are currently available.';
 
@@ -74,6 +165,10 @@ class DefaultAvatarsTestLang
 function htmlspecialchars_uni($value)
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+}
+
+function rebuild_settings()
+{
 }
 
 default_avatars_test_write_png($default_avatars_test_root . '/images/avatars/general.png');
@@ -90,6 +185,7 @@ $mybb = (object)array(
         'default_avatars_directory' => 'images/avatars',
         'default_avatars_url' => 'images/avatars',
         'default_avatars_extensions' => 'png,jpg',
+        'default_avatars_default_collection' => '',
     ),
 );
 
@@ -150,6 +246,23 @@ default_avatars_test_assert(
     'public URLs should encode path segments'
 );
 
+$db = new DefaultAvatarsTestDatabase();
+default_avatars_ensure_settings();
+default_avatars_test_assert(
+    count($db->settings) === 4,
+    'setting synchronization should create all settings'
+);
+default_avatars_test_assert(
+    isset($db->settings['default_avatars_default_collection']),
+    'setting synchronization should create the default collection setting'
+);
+$db->settings['default_avatars_directory']['value'] = 'custom/avatars';
+default_avatars_activate();
+default_avatars_test_assert(
+    $db->settings['default_avatars_directory']['value'] === 'custom/avatars',
+    'activation setting synchronization should preserve existing setting values'
+);
+
 $avatarupload = '<tr><td class="trow1">Upload Avatar:</td></tr>';
 default_avatars_render_gallery();
 default_avatars_test_assert(
@@ -159,6 +272,14 @@ default_avatars_test_assert(
 default_avatars_test_assert(
     strpos($avatarupload, '<select id="default_avatars_category"') !== false,
     'gallery should use a category dropdown'
+);
+default_avatars_test_assert(
+    strpos($avatarupload, '<option value="default_avatars_collection_1" selected="selected">Fantasy</option>') !== false,
+    'gallery should show the first folder automatically when no default collection is configured'
+);
+default_avatars_test_assert(
+    strpos($avatarupload, 'id="default_avatars_collection_1"><div class="default-avatars-grid">') !== false,
+    'the automatic default folder panel should be visible'
 );
 default_avatars_test_assert(
     strpos($avatarupload, 'class="default-avatars-panel"') !== false
@@ -172,6 +293,18 @@ default_avatars_test_assert(
 default_avatars_test_assert(
     strpos($avatarupload, 'Use Blue Knight') === false,
     'avatar names should not be repeated with separate use labels'
+);
+
+$mybb->settings['default_avatars_default_collection'] = 'space set';
+$avatarupload = '<tr><td class="trow1">Upload Avatar:</td></tr>';
+default_avatars_render_gallery();
+default_avatars_test_assert(
+    strpos($avatarupload, '<option value="default_avatars_collection_2" selected="selected">Space Set</option>') !== false,
+    'configured default collection should be selected'
+);
+default_avatars_test_assert(
+    strpos($avatarupload, 'id="default_avatars_collection_2"><div class="default-avatars-grid">') !== false,
+    'configured default collection panel should be visible'
 );
 
 $mybb->settings['default_avatars_directory'] = '../avatars';
