@@ -76,24 +76,40 @@ function default_avatars_render_gallery()
     global $avatarupload, $lang;
     $lang->load('default_avatars');
     $collections = default_avatars_discover();
+    $heading = htmlspecialchars_uni($lang->default_avatars_gallery_title);
     $content = '';
+
     if(!$collections) {
-        $content = '<p>'.htmlspecialchars_uni($lang->default_avatars_empty).'</p>';
+        $content = '<p class="smalltext">'.htmlspecialchars_uni($lang->default_avatars_empty).'</p>';
     } else {
+        $select = '<label class="default-avatars-category-label" for="default_avatars_category">'.htmlspecialchars_uni($lang->default_avatars_category_label).'</label>'
+            . '<select id="default_avatars_category" class="default-avatars-category" autocomplete="off">'
+            . '<option value="">'.htmlspecialchars_uni($lang->default_avatars_select_collection).'</option>';
+        $panels = '';
+        $index = 0;
+
         foreach($collections as $collection => $avatars) {
-            $content .= '<details class="default-avatars-collection" open><summary>'.htmlspecialchars_uni(default_avatars_collection_label($collection)).'</summary><div class="default-avatars-grid">';
+            $panel = 'default_avatars_collection_'.$index++;
+            $select .= '<option value="'.$panel.'">'.htmlspecialchars_uni(default_avatars_collection_label($collection)).'</option>';
+            $panels .= '<div class="default-avatars-panel" id="'.$panel.'" hidden><div class="default-avatars-grid">';
+
             foreach($avatars as $avatar) {
                 $path = htmlspecialchars_uni($avatar['relative']);
                 $url = htmlspecialchars_uni($avatar['url']);
                 $name = htmlspecialchars_uni($avatar['name']);
-                $choose = htmlspecialchars_uni($lang->sprintf($lang->default_avatars_choose, $avatar['name']));
-                $content .= '<label class="default-avatar-option"><input type="radio" name="default_avatar" value="'.$path.'"><span class="default-avatar-preview"><img src="'.$url.'" alt="'.$name.'" loading="lazy"></span><span>'.$name.'</span><small>'.$choose.'</small></label>';
+                $panels .= '<label class="default-avatar-option"><input type="radio" name="default_avatar" value="'.$path.'"><span class="default-avatar-preview"><img src="'.$url.'" alt="'.$name.'" loading="lazy"></span><span class="default-avatar-name">'.$name.'</span></label>';
             }
-            $content .= '</div></details>';
+
+            $panels .= '</div></div>';
         }
+
+        $select .= '</select>';
+        $content = '<div class="default-avatars-controls">'.$select.'</div>'.$panels;
     }
-    $css = '<style>.default-avatars-wrap{padding:12px}.default-avatars-collection{margin:8px 0;border:1px solid #ccc}.default-avatars-collection>summary{padding:9px 12px;font-weight:bold;cursor:pointer}.default-avatars-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;padding:12px}.default-avatar-option{display:flex;position:relative;flex-direction:column;align-items:center;gap:6px;padding:8px;border:2px solid transparent;border-radius:4px;cursor:pointer;text-align:center}.default-avatar-option:has(input:checked){border-color:#3578b9;background:rgba(53,120,185,.08)}.default-avatar-option input{position:absolute;opacity:0}.default-avatar-option:focus-within{outline:2px solid #3578b9}.default-avatar-preview{display:flex;align-items:center;justify-content:center;width:100px;height:100px}.default-avatar-preview img{max-width:100px;max-height:100px}</style>';
-    $avatarupload = '<tr><td class="trow1" colspan="2"><div class="default-avatars-wrap"><strong>'.htmlspecialchars_uni($lang->default_avatars_gallery_title).'</strong><p class="smalltext">'.htmlspecialchars_uni($lang->default_avatars_gallery_description).'</p>'.$content.'</div>'.$css.'</td></tr>'.$avatarupload;
+
+    $css = '<style>.default-avatars-wrap{padding:12px}.default-avatars-controls{display:flex;align-items:center;gap:8px;margin-bottom:10px}.default-avatars-category-label{font-weight:bold}.default-avatars-category{max-width:320px}.default-avatars-panel{max-height:260px;overflow:auto;border:1px solid #555;padding:12px}.default-avatars-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:12px}.default-avatar-option{display:flex;position:relative;flex-direction:column;align-items:center;gap:6px;min-height:142px;padding:8px;border:2px solid transparent;border-radius:4px;cursor:pointer;text-align:center}.default-avatar-option.default-avatar-selected{border-color:#3578b9;background:rgba(53,120,185,.08)}.default-avatar-option input{position:absolute;opacity:0}.default-avatar-option:focus-within{outline:2px solid #3578b9;outline-offset:2px}.default-avatar-preview{display:flex;align-items:center;justify-content:center;width:100px;height:100px}.default-avatar-preview img{max-width:100px;max-height:100px}.default-avatar-name{display:block;line-height:1.3}</style>';
+    $script = '<script type="text/javascript">(function(){var select=document.getElementById("default_avatars_category");if(!select){return;}var panels=document.querySelectorAll(".default-avatars-panel");var options=document.querySelectorAll(".default-avatar-option input");function showPanel(){for(var i=0;i<panels.length;i++){panels[i].hidden=panels[i].id!==select.value;}}function markSelected(){for(var i=0;i<options.length;i++){var label=options[i].parentNode;if(label){if(options[i].checked){label.classList.add("default-avatar-selected");}else{label.classList.remove("default-avatar-selected");}}}}select.addEventListener("change",showPanel);for(var i=0;i<options.length;i++){options[i].addEventListener("change",markSelected);}showPanel();markSelected();}());</script>';
+    $avatarupload .= '<tr><td class="tcat" colspan="2"><strong>'.$heading.'</strong></td></tr><tr><td class="trow1" colspan="2"><div class="default-avatars-wrap">'.$content.'</div>'.$css.$script.'</td></tr>';
 }
 
 function default_avatars_save_selection()

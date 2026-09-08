@@ -57,6 +57,20 @@ class DefaultAvatarsTestPlugins
     }
 }
 
+class DefaultAvatarsTestLang
+{
+    public $default_avatars_gallery_title = 'Default Avatars';
+    public $default_avatars_gallery_description = 'Select an avatar from one of the collections below.';
+    public $default_avatars_category_label = 'Category';
+    public $default_avatars_select_collection = 'Select a collection...';
+    public $default_avatars_general_collection = 'General';
+    public $default_avatars_empty = 'No default avatars are currently available.';
+
+    public function load($name)
+    {
+    }
+}
+
 function htmlspecialchars_uni($value)
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
@@ -69,6 +83,7 @@ file_put_contents($default_avatars_test_root . '/images/avatars/not-image.png', 
 file_put_contents($default_avatars_test_root . '/images/avatars/readme.txt', 'ignore me');
 
 $plugins = new DefaultAvatarsTestPlugins();
+$lang = new DefaultAvatarsTestLang();
 $mybb = (object)array(
     'settings' => array(
         'bburl' => 'https://example.com/forum',
@@ -133,6 +148,30 @@ default_avatars_test_assert(
 default_avatars_test_assert(
     $collections['space set'][0]['url'] === 'https://example.com/forum/images/avatars/space%20set/red%20pilot.png',
     'public URLs should encode path segments'
+);
+
+$avatarupload = '<tr><td class="trow1">Upload Avatar:</td></tr>';
+default_avatars_render_gallery();
+default_avatars_test_assert(
+    strpos($avatarupload, '<td class="trow1">Upload Avatar:</td>') < strpos($avatarupload, 'Default Avatars'),
+    'gallery should render after the custom avatar rows'
+);
+default_avatars_test_assert(
+    strpos($avatarupload, '<select id="default_avatars_category"') !== false,
+    'gallery should use a category dropdown'
+);
+default_avatars_test_assert(
+    strpos($avatarupload, 'class="default-avatars-panel"') !== false
+        && strpos($avatarupload, 'max-height:260px;overflow:auto') !== false,
+    'gallery should render a scrollable avatar panel'
+);
+default_avatars_test_assert(
+    strpos($avatarupload, '<details') === false && strpos($avatarupload, '<summary>') === false,
+    'gallery should not render expanded details sections'
+);
+default_avatars_test_assert(
+    strpos($avatarupload, 'Use Blue Knight') === false,
+    'avatar names should not be repeated with separate use labels'
 );
 
 $mybb->settings['default_avatars_directory'] = '../avatars';

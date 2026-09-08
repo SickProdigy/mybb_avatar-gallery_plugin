@@ -4,6 +4,7 @@
 
 - Added initial Avatar Gallery plugin for MyBB 1.8.
 - Added recursive avatar discovery with subdirectory collections.
+- Added a compact User CP picker with a category dropdown and scrollable avatar grid.
 - Added server-side validation for selected gallery avatars.
 - Added configurable gallery directory, public URL path, and allowed image extensions.
 - Added separate Admin CP language file for plugin listing and settings screens.
