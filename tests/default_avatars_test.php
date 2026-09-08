@@ -184,7 +184,7 @@ $mybb = (object)array(
         'bburl' => 'https://example.com/forum',
         'default_avatars_directory' => 'images/avatars',
         'default_avatars_url' => 'images/avatars',
-        'default_avatars_extensions' => 'png,jpg',
+        'default_avatars_extensions' => 'png,jpg,webp',
         'default_avatars_default_collection' => '',
     ),
 );
@@ -206,7 +206,7 @@ default_avatars_test_assert(
     'config should normalize the public URL path'
 );
 default_avatars_test_assert(
-    $config['extensions'] === array('png', 'jpg'),
+    $config['extensions'] === array('png', 'jpg', 'webp'),
     'config should keep the configured supported extension subset'
 );
 
@@ -255,6 +255,10 @@ default_avatars_test_assert(
 default_avatars_test_assert(
     isset($db->settings['default_avatars_default_collection']),
     'setting synchronization should create the default collection setting'
+);
+default_avatars_test_assert(
+    $db->settings['default_avatars_extensions']['value'] === 'gif,jpg,jpeg,jpe,bmp,png',
+    'default extension setting should match MyBB avatar upload extensions'
 );
 $db->settings['default_avatars_directory']['value'] = 'custom/avatars';
 default_avatars_activate();
@@ -311,6 +315,14 @@ $mybb->settings['default_avatars_directory'] = '../avatars';
 default_avatars_test_assert(
     default_avatars_config() === false,
     'config should reject directories outside MYBB_ROOT'
+);
+
+$mybb->settings['default_avatars_directory'] = 'images/avatars';
+unset($mybb->settings['default_avatars_extensions']);
+$default_config = default_avatars_config();
+default_avatars_test_assert(
+    $default_config['extensions'] === array('gif', 'jpg', 'jpeg', 'jpe', 'bmp', 'png'),
+    'missing extension setting should fall back to MyBB avatar upload extensions'
 );
 
 default_avatars_test_remove_tree($default_avatars_test_root);

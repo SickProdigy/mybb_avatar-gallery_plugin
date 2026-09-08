@@ -60,7 +60,7 @@ function default_avatars_ensure_settings()
     $settings = array(
         array('name' => 'default_avatars_directory', 'title' => $lang->default_avatars_directory, 'description' => $lang->default_avatars_directory_description, 'value' => 'images/avatars'),
         array('name' => 'default_avatars_url', 'title' => $lang->default_avatars_url, 'description' => $lang->default_avatars_url_description, 'value' => 'images/avatars'),
-        array('name' => 'default_avatars_extensions', 'title' => $lang->default_avatars_extensions, 'description' => $lang->default_avatars_extensions_description, 'value' => 'png,jpg,jpeg,gif,webp'),
+        array('name' => 'default_avatars_extensions', 'title' => $lang->default_avatars_extensions, 'description' => $lang->default_avatars_extensions_description, 'value' => 'gif,jpg,jpeg,jpe,bmp,png'),
         array('name' => 'default_avatars_default_collection', 'title' => $lang->default_avatars_default_collection, 'description' => $lang->default_avatars_default_collection_description, 'value' => '')
     );
     foreach($settings as $order => $setting)
@@ -192,13 +192,13 @@ function default_avatars_config()
     global $mybb;
     $directory = trim(isset($mybb->settings['default_avatars_directory']) ? $mybb->settings['default_avatars_directory'] : 'images/avatars');
     $url = trim(isset($mybb->settings['default_avatars_url']) ? $mybb->settings['default_avatars_url'] : 'images/avatars');
-    $allowed = isset($mybb->settings['default_avatars_extensions']) ? $mybb->settings['default_avatars_extensions'] : 'png,jpg,jpeg,gif,webp';
+    $allowed = isset($mybb->settings['default_avatars_extensions']) ? $mybb->settings['default_avatars_extensions'] : 'gif,jpg,jpeg,jpe,bmp,png';
     $directory = str_replace('\\', '/', $directory);
     if(!$directory || $directory[0] === '/' || preg_match('#(^|/)\.\.(/|$)#', $directory)) { return false; }
     $absolute = realpath(MYBB_ROOT.$directory);
     $root = rtrim(realpath(MYBB_ROOT), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
     if(!$absolute || !is_dir($absolute) || strncmp($absolute.DIRECTORY_SEPARATOR, $root, strlen($root)) !== 0) { return false; }
-    $supported = array('png', 'jpg', 'jpeg', 'gif', 'webp');
+    $supported = array('gif', 'jpg', 'jpeg', 'jpe', 'bmp', 'png', 'webp');
     $extensions = array_values(array_intersect(array_unique(array_map('trim', explode(',', strtolower($allowed)))), $supported));
     if(!$extensions) { $extensions = $supported; }
     return array('directory' => rtrim($absolute, DIRECTORY_SEPARATOR), 'url_path' => trim(str_replace('\\', '/', $url), '/'), 'extensions' => $extensions);

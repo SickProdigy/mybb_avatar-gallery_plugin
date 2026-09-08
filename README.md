@@ -4,7 +4,7 @@ Adds a selectable, categorized avatar gallery to MyBB's User Control Panel. Imag
 
 ## Features
 
-- Discovers PNG, JPEG, GIF, and WebP images.
+- Discovers GIF, JPEG, JPE, BMP, PNG, and optional WebP images.
 - Validates selections server-side and rejects traversal and escaping symlinks.
 - Works independently of upload and remote-avatar permissions.
 - Configurable filesystem directory, public path, extensions, and default collection.
