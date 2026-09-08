@@ -23,6 +23,7 @@ Users select an image at **User CP → Change Avatar**.
 ```bash
 php -l Upload/inc/plugins/default_avatars.php
 php -l Upload/inc/languages/english/default_avatars.lang.php
+php -l Upload/inc/languages/english/admin/default_avatars.lang.php
 php tests/default_avatars_test.php
 ```
 

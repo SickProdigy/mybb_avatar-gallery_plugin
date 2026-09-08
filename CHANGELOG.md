@@ -6,4 +6,5 @@
 - Added recursive avatar discovery with subdirectory collections.
 - Added server-side validation for selected gallery avatars.
 - Added configurable gallery directory, public URL path, and allowed image extensions.
+- Added separate Admin CP language file for plugin listing and settings screens.
 - Added release packaging layout, tests, and GitHub/Gitea release workflows.

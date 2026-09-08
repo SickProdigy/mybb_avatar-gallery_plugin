@@ -67,6 +67,7 @@ jobs:
           archive_contents="$(unzip -Z1 "$archive")"
           required_entries=(
             Upload/inc/plugins/default_avatars.php
+            Upload/inc/languages/english/admin/default_avatars.lang.php
             Upload/inc/languages/english/default_avatars.lang.php
             README.md
             LICENSE
