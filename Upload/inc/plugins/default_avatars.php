@@ -19,7 +19,7 @@ function default_avatars_info()
         'website' => 'https://gitea.rcs1.top/sickprodigy/mybb_avatar-gallery_plugin',
         'author' => 'SickProdigy',
         'authorsite' => 'https://www.sickgaming.net/',
-        'version' => '0.1.0',
+        'version' => '1.0.0',
         'compatibility' => '18*',
         'license' => 'GPL-3.0-only'
     );

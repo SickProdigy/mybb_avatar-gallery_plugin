@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 - 2026-09-08
+## 1.0.0 - 2026-09-08
 
 - Added initial Avatar Gallery plugin for MyBB 1.8.
 - Added recursive avatar discovery with subdirectory collections.
