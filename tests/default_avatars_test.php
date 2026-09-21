@@ -142,6 +142,7 @@ class DefaultAvatarsTestDatabase
 class DefaultAvatarsTestLang
 {
     public $default_avatars_name = 'Avatar Gallery';
+    public $default_avatars_description = 'Adds a secure, categorized avatar gallery.';
     public $default_avatars_settings_description = 'Configure where gallery images are discovered and published.';
     public $default_avatars_directory = 'Avatar gallery directory';
     public $default_avatars_directory_description = 'Filesystem directory.';
@@ -151,6 +152,8 @@ class DefaultAvatarsTestLang
     public $default_avatars_extensions_description = 'Allowed extensions.';
     public $default_avatars_default_collection = 'Default collection';
     public $default_avatars_default_collection_description = 'Optional folder path to show first.';
+    public $default_avatars_random_registration = 'Random avatar on registration';
+    public $default_avatars_random_registration_description = 'Assign a random gallery avatar on registration.';
     public $default_avatars_gallery_title = 'Default Avatars';
     public $default_avatars_gallery_description = 'Select an avatar from one of the collections below.';
     public $default_avatars_category_label = 'Category';
@@ -186,14 +189,25 @@ $mybb = (object)array(
         'default_avatars_url' => 'images/avatars',
         'default_avatars_extensions' => 'png,jpg,webp',
         'default_avatars_default_collection' => '',
+        'default_avatars_random_registration' => '0',
     ),
 );
 
 require dirname(__DIR__) . '/Upload/inc/plugins/default_avatars.php';
 
 default_avatars_test_assert(
-    isset($plugins->hooks['usercp_avatar_end']) && isset($plugins->hooks['usercp_do_avatar_start']),
+    isset($plugins->hooks['usercp_avatar_end'])
+        && isset($plugins->hooks['usercp_do_avatar_start'])
+        && isset($plugins->hooks['datahandler_user_insert']),
     'plugin hooks should be registered'
+);
+
+$info = default_avatars_info();
+default_avatars_test_assert(
+    $info['version'] === '1.0.1'
+        && $info['website'] === 'https://github.com/sickprodigy/mybb_avatar-gallery_plugin'
+        && $info['authorsite'] === 'https://www.sickgaming.net',
+    'plugin metadata should expose the patch version and standardized links'
 );
 
 $config = default_avatars_config();
@@ -249,7 +263,7 @@ default_avatars_test_assert(
 $db = new DefaultAvatarsTestDatabase();
 default_avatars_ensure_settings();
 default_avatars_test_assert(
-    count($db->settings) === 4,
+    count($db->settings) === 5,
     'setting synchronization should create all settings'
 );
 default_avatars_test_assert(
@@ -260,11 +274,54 @@ default_avatars_test_assert(
     $db->settings['default_avatars_extensions']['value'] === 'gif,jpg,jpeg,jpe,bmp,png',
     'default extension setting should match MyBB avatar upload extensions'
 );
+default_avatars_test_assert(
+    $db->settings['default_avatars_random_registration']['optionscode'] === 'onoff'
+        && $db->settings['default_avatars_random_registration']['value'] === '0',
+    'random registration avatars should be optional and disabled by default'
+);
 $db->settings['default_avatars_directory']['value'] = 'custom/avatars';
 default_avatars_activate();
 default_avatars_test_assert(
     $db->settings['default_avatars_directory']['value'] === 'custom/avatars',
     'activation setting synchronization should preserve existing setting values'
+);
+
+$mybb->settings['default_avatars_random_registration'] = '1';
+$registration_handler = (object)array(
+    'data' => array('registration' => true),
+    'user_insert_data' => array('avatar' => '')
+);
+default_avatars_assign_registration_avatar($registration_handler);
+default_avatars_test_assert(
+    in_array($registration_handler->user_insert_data['avatar'], array(
+        'images/avatars/general.png',
+        'images/avatars/fantasy/blue_knight.png',
+        'images/avatars/space%20set/red%20pilot.png',
+    ), true)
+        && $registration_handler->user_insert_data['avatardimensions'] === '1|1'
+        && $registration_handler->user_insert_data['avatartype'] === 'default_avatar',
+    'registration should receive a random validated gallery avatar when enabled'
+);
+
+$custom_avatar_handler = (object)array(
+    'data' => array('registration' => true),
+    'user_insert_data' => array('avatar' => 'https://example.com/custom.png')
+);
+default_avatars_assign_registration_avatar($custom_avatar_handler);
+default_avatars_test_assert(
+    $custom_avatar_handler->user_insert_data['avatar'] === 'https://example.com/custom.png',
+    'registration should preserve an avatar that was already provided'
+);
+
+$default_avatar_handler = (object)array(
+    'data' => array('registration' => true),
+    'user_insert_data' => array('avatar' => 'images/default-avatar.php?uid=0')
+);
+default_avatars_assign_registration_avatar($default_avatar_handler);
+default_avatars_test_assert(
+    $default_avatar_handler->user_insert_data['avatar'] !== 'images/default-avatar.php?uid=0'
+        && $default_avatar_handler->user_insert_data['avatartype'] === 'default_avatar',
+    'registration should replace the dynamic default avatar with a gallery image'
 );
 
 $avatarupload = '<tr><td class="trow1">Upload Avatar:</td></tr>';

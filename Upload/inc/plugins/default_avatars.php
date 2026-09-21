@@ -8,6 +8,7 @@ if(!defined('IN_MYBB')) { die('This file cannot be accessed directly.'); }
 
 $plugins->add_hook('usercp_avatar_end', 'default_avatars_render_gallery');
 $plugins->add_hook('usercp_do_avatar_start', 'default_avatars_save_selection');
+$plugins->add_hook('datahandler_user_insert', 'default_avatars_assign_registration_avatar');
 
 function default_avatars_info()
 {
@@ -16,10 +17,10 @@ function default_avatars_info()
     return array(
         'name' => $lang->default_avatars_name,
         'description' => $lang->default_avatars_description,
-        'website' => 'https://gitea.rcs1.top/sickprodigy/mybb_avatar-gallery_plugin',
+        'website' => 'https://github.com/sickprodigy/mybb_avatar-gallery_plugin',
         'author' => 'SickProdigy',
-        'authorsite' => 'https://www.sickgaming.net/',
-        'version' => '1.0.0',
+        'authorsite' => 'https://www.sickgaming.net',
+        'version' => '1.0.1',
         'compatibility' => '18*',
         'license' => 'GPL-3.0-only'
     );
@@ -61,13 +62,14 @@ function default_avatars_ensure_settings()
         array('name' => 'default_avatars_directory', 'title' => $lang->default_avatars_directory, 'description' => $lang->default_avatars_directory_description, 'value' => 'images/avatars'),
         array('name' => 'default_avatars_url', 'title' => $lang->default_avatars_url, 'description' => $lang->default_avatars_url_description, 'value' => 'images/avatars'),
         array('name' => 'default_avatars_extensions', 'title' => $lang->default_avatars_extensions, 'description' => $lang->default_avatars_extensions_description, 'value' => 'gif,jpg,jpeg,jpe,bmp,png'),
-        array('name' => 'default_avatars_default_collection', 'title' => $lang->default_avatars_default_collection, 'description' => $lang->default_avatars_default_collection_description, 'value' => '')
+        array('name' => 'default_avatars_default_collection', 'title' => $lang->default_avatars_default_collection, 'description' => $lang->default_avatars_default_collection_description, 'value' => ''),
+        array('name' => 'default_avatars_random_registration', 'title' => $lang->default_avatars_random_registration, 'description' => $lang->default_avatars_random_registration_description, 'value' => '0', 'optionscode' => 'onoff')
     );
     foreach($settings as $order => $setting)
     {
         $setting['title'] = $db->escape_string($setting['title']);
         $setting['description'] = $db->escape_string($setting['description']);
-        $setting['optionscode'] = 'text';
+        if(!isset($setting['optionscode'])) { $setting['optionscode'] = 'text'; }
         $setting['disporder'] = $order + 1;
         $setting['gid'] = $gid;
         $sid = (int)$db->fetch_field($db->simple_select('settings', 'sid', "name='".$db->escape_string($setting['name'])."'", array('limit' => 1)), 'sid');
@@ -155,6 +157,45 @@ function default_avatars_save_selection()
     require_once MYBB_ROOT.'inc/functions_upload.php';
     remove_avatars((int)$mybb->user['uid']);
     redirect('usercp.php?action=avatar', $lang->redirect_avatarupdated);
+}
+
+function default_avatars_assign_registration_avatar(&$datahandler)
+{
+    global $mybb, $db;
+
+    if(empty($mybb->settings['default_avatars_random_registration'])
+        || empty($datahandler->data['registration'])
+        || !isset($datahandler->user_insert_data)) {
+        return;
+    }
+
+    $current = isset($datahandler->user_insert_data['avatar']) ? trim($datahandler->user_insert_data['avatar']) : '';
+    $current_path = parse_url($current, PHP_URL_PATH);
+    if($current !== '' && basename((string)$current_path) !== 'default-avatar.php') {
+        return;
+    }
+
+    $avatar = default_avatars_random_avatar();
+    if(!$avatar || !($dimensions = @getimagesize($avatar['absolute']))) {
+        return;
+    }
+
+    $datahandler->user_insert_data['avatar'] = $db->escape_string($avatar['public_path']);
+    $datahandler->user_insert_data['avatardimensions'] = (int)$dimensions[0].'|'.(int)$dimensions[1];
+    $datahandler->user_insert_data['avatartype'] = 'default_avatar';
+}
+
+function default_avatars_random_avatar()
+{
+    $avatars = array();
+    foreach(default_avatars_discover() as $collection) {
+        foreach($collection as $avatar) { $avatars[] = $avatar; }
+    }
+
+    if(empty($avatars)) { return false; }
+    $selected = $avatars[array_rand($avatars)];
+
+    return default_avatars_validate($selected['relative']);
 }
 
 function default_avatars_discover()

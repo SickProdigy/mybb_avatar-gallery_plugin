@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1 - 2026-09-17
+
+- Added an optional setting that assigns a random gallery avatar to new registrations using the default avatar.
+- Standardized the plugin website and author links used in the MyBB plugin list.
+
 ## 1.0.0 - 2026-09-08
 
 - Added initial Avatar Gallery plugin for MyBB 1.8.

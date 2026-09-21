@@ -8,6 +8,7 @@ Adds a selectable, categorized avatar gallery to MyBB's User Control Panel. Imag
 - Validates selections server-side and rejects traversal and escaping symlinks.
 - Works independently of upload and remote-avatar permissions.
 - Configurable filesystem directory, public path, extensions, and default collection.
+- Optionally assigns each newly registered user a random gallery avatar.
 
 ## Installation
 
@@ -17,6 +18,8 @@ Adds a selectable, categorized avatar gallery to MyBB's User Control Panel. Imag
 4. Optionally edit **ACP → Configuration → Settings → Avatar Gallery**.
 
 Users select an image at **User CP → Change Avatar**.
+
+Enable **Random avatar on registration** in the Avatar Gallery settings to replace the normal default avatar with a random validated gallery image for new registrations. Existing users and registrations that already provide a custom avatar are left unchanged.
 
 The gallery directory is the filesystem path MyBB scans for image files. The gallery URL path is the public browser path used to display those same images; both commonly use `images/avatars`, but they can differ on custom deployments.
 
