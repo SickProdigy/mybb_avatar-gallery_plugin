@@ -195,22 +195,38 @@ $mybb = (object)array(
 
 require dirname(__DIR__) . '/Upload/inc/plugins/default_avatars.php';
 
+$config = default_avatars_config();
 default_avatars_test_assert(
     isset($plugins->hooks['usercp_avatar_end'])
         && isset($plugins->hooks['usercp_do_avatar_start'])
         && isset($plugins->hooks['datahandler_user_insert']),
     'plugin hooks should be registered'
 );
+default_avatars_test_assert(
+    isset($plugins->hooks['admin_tools_action_handler'])
+        && isset($plugins->hooks['admin_tools_menu'])
+        && isset($plugins->hooks['admin_tools_permissions']),
+    'repair tool should register MyBB Admin CP tools hooks'
+);
 
 $info = default_avatars_info();
 default_avatars_test_assert(
-    $info['version'] === '1.0.1'
+    $info['version'] === '1.0.2'
         && $info['website'] === 'https://github.com/sickprodigy/mybb_avatar-gallery_plugin'
         && $info['authorsite'] === 'https://www.sickgaming.net',
     'plugin metadata should expose the patch version and standardized links'
 );
 
-$config = default_avatars_config();
+default_avatars_test_assert(
+    default_avatars_broken_gallery_avatar('images/avatars/old folder/missing.png', 'default_avatar', $config),
+    'missing files beneath the gallery URL should be repair candidates'
+);
+default_avatars_test_assert(
+    !default_avatars_broken_gallery_avatar('images/avatars/fantasy/blue_knight.png', 'default_avatar', $config)
+        && !default_avatars_broken_gallery_avatar('https://example.com/custom.png', 'remote', $config),
+    'valid gallery and custom avatars should not be repair candidates'
+);
+
 default_avatars_test_assert(
     $config && $config['directory'] === realpath($default_avatars_test_root . '/images/avatars'),
     'config should resolve the avatar directory inside MYBB_ROOT'

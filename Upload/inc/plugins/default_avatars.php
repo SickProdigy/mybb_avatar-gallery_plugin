@@ -9,6 +9,28 @@ if(!defined('IN_MYBB')) { die('This file cannot be accessed directly.'); }
 $plugins->add_hook('usercp_avatar_end', 'default_avatars_render_gallery');
 $plugins->add_hook('usercp_do_avatar_start', 'default_avatars_save_selection');
 $plugins->add_hook('datahandler_user_insert', 'default_avatars_assign_registration_avatar');
+$plugins->add_hook('admin_tools_action_handler', 'default_avatars_admin_action_handler');
+$plugins->add_hook('admin_tools_menu', 'default_avatars_admin_menu');
+$plugins->add_hook('admin_tools_permissions', 'default_avatars_admin_permissions');
+
+function default_avatars_admin_action_handler(&$actions)
+{
+    $actions['avatar_gallery_repair'] = array('active' => 'avatar_gallery_repair', 'file' => 'avatar_gallery_repair.php');
+}
+
+function default_avatars_admin_menu(&$sub_menu)
+{
+    global $lang;
+    $lang->load('default_avatars');
+    $sub_menu['75'] = array('id' => 'avatar_gallery_repair', 'title' => $lang->default_avatars_repair, 'link' => 'index.php?module=tools-avatar_gallery_repair');
+}
+
+function default_avatars_admin_permissions(&$permissions)
+{
+    global $lang;
+    $lang->load('default_avatars');
+    $permissions['avatar_gallery_repair'] = $lang->default_avatars_repair_permission;
+}
 
 function default_avatars_info()
 {
@@ -20,7 +42,7 @@ function default_avatars_info()
         'website' => 'https://github.com/sickprodigy/mybb_avatar-gallery_plugin',
         'author' => 'SickProdigy',
         'authorsite' => 'https://www.sickgaming.net',
-        'version' => '1.0.1',
+        'version' => '1.0.2',
         'compatibility' => '18*',
         'license' => 'GPL-3.0-only'
     );
@@ -185,17 +207,37 @@ function default_avatars_assign_registration_avatar(&$datahandler)
     $datahandler->user_insert_data['avatartype'] = 'default_avatar';
 }
 
-function default_avatars_random_avatar()
+function default_avatars_avatar_pool()
 {
     $avatars = array();
     foreach(default_avatars_discover() as $collection) {
-        foreach($collection as $avatar) { $avatars[] = $avatar; }
+        foreach($collection as $avatar) {
+            $validated = default_avatars_validate($avatar['relative']);
+            if($validated) { $avatars[] = $validated; }
+        }
     }
 
-    if(empty($avatars)) { return false; }
-    $selected = $avatars[array_rand($avatars)];
+    return $avatars;
+}
 
-    return default_avatars_validate($selected['relative']);
+function default_avatars_random_avatar($avatars = null)
+{
+    if($avatars === null) { $avatars = default_avatars_avatar_pool(); }
+
+    if(empty($avatars)) { return false; }
+    return $avatars[array_rand($avatars)];
+}
+
+function default_avatars_broken_gallery_avatar($avatar, $avatar_type, $config = null)
+{
+    if($avatar_type !== 'default_avatar') { return false; }
+    if($config === null) { $config = default_avatars_config(); }
+    if(!$config) { return false; }
+    $path = parse_url(html_entity_decode((string)$avatar, ENT_QUOTES, 'UTF-8'), PHP_URL_PATH);
+    $path = ltrim(str_replace('\\', '/', rawurldecode((string)$path)), '/');
+    $prefix = trim($config['url_path'], '/').'/';
+    if(strncmp($path, $prefix, strlen($prefix)) !== 0) { return false; }
+    return default_avatars_validate(substr($path, strlen($prefix)), $config) === false;
 }
 
 function default_avatars_discover()

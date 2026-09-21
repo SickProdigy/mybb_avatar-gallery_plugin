@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2 - 2026-09-20
+
+- Added an Admin CP maintenance tool to preview and repair broken gallery avatar
+  assignments after gallery files or folders are renamed.
+
 ## 1.0.1 - 2026-09-17
 
 - Added an optional setting that assigns a random gallery avatar to new registrations using the default avatar.
