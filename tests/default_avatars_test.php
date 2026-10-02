@@ -211,20 +211,30 @@ default_avatars_test_assert(
 
 $info = default_avatars_info();
 default_avatars_test_assert(
-    $info['version'] === '1.0.2'
+    $info['version'] === '1.0.3'
         && $info['website'] === 'https://github.com/sickprodigy/mybb_avatar-gallery_plugin'
         && $info['authorsite'] === 'https://www.sickgaming.net',
     'plugin metadata should expose the patch version and standardized links'
 );
 
 default_avatars_test_assert(
-    default_avatars_broken_gallery_avatar('images/avatars/old folder/missing.png', 'default_avatar', $config),
-    'missing files beneath the gallery URL should be repair candidates'
+    default_avatars_broken_gallery_avatar('images/avatars/old folder/missing.png', 'gallery', $config)
+        && default_avatars_broken_gallery_avatar('images/avatars/old folder/missing.png', 'default_avatar', $config)
+        && default_avatars_broken_gallery_avatar('images/avatars/old folder/missing.png', 'default_av', $config),
+    'missing current and legacy gallery avatars should be repair candidates'
 );
 default_avatars_test_assert(
-    !default_avatars_broken_gallery_avatar('images/avatars/fantasy/blue_knight.png', 'default_avatar', $config)
+    !default_avatars_broken_gallery_avatar('images/avatars/fantasy/blue_knight.png', 'gallery', $config)
         && !default_avatars_broken_gallery_avatar('https://example.com/custom.png', 'remote', $config),
     'valid gallery and custom avatars should not be repair candidates'
+);
+
+default_avatars_test_assert(
+    default_avatars_avatar_needs_repair('', '', $config)
+        && default_avatars_avatar_needs_repair('images/avatars/missing.png', 'upload', $config)
+        && !default_avatars_avatar_needs_repair('images/avatars/general.png', 'gallery', $config)
+        && !default_avatars_avatar_needs_repair('https://example.com/custom.png', 'remote', $config),
+    'repair should include blank and missing local avatars without probing remote URLs'
 );
 
 default_avatars_test_assert(
@@ -315,7 +325,8 @@ default_avatars_test_assert(
         'images/avatars/space%20set/red%20pilot.png',
     ), true)
         && $registration_handler->user_insert_data['avatardimensions'] === '1|1'
-        && $registration_handler->user_insert_data['avatartype'] === 'default_avatar',
+        && $registration_handler->user_insert_data['avatartype'] === 'gallery'
+        && strlen($registration_handler->user_insert_data['avatartype']) <= 10,
     'registration should receive a random validated gallery avatar when enabled'
 );
 
@@ -336,7 +347,7 @@ $default_avatar_handler = (object)array(
 default_avatars_assign_registration_avatar($default_avatar_handler);
 default_avatars_test_assert(
     $default_avatar_handler->user_insert_data['avatar'] !== 'images/default-avatar.php?uid=0'
-        && $default_avatar_handler->user_insert_data['avatartype'] === 'default_avatar',
+        && $default_avatar_handler->user_insert_data['avatartype'] === 'gallery',
     'registration should replace the dynamic default avatar with a gallery image'
 );
 

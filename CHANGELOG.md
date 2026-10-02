@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.3 - 2026-10-02
+
+- Fixed HTTP 500 errors when saving gallery avatars on strict MySQL/MariaDB installations by using the schema-safe `gallery` avatar type.
+- Kept repair compatibility with legacy `default_avatar` and truncated `default_av` records.
+- Expanded repair detection to cover users with no saved avatar and missing local avatar files.
+- Split Admin CP maintenance into separate broken-avatar, no-avatar, and exact-match actions.
+- Added hybrid processing: operations affecting 500 users or fewer run immediately, while larger operations queue through MyBB’s task system in 500-user batches.
+- Added background-job progress reporting and duplicate-job protection.
+
 ## 1.0.2 - 2026-09-20
 
 - Added an Admin CP maintenance tool to preview and repair broken gallery avatar

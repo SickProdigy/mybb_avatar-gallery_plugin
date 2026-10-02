@@ -42,7 +42,7 @@ function default_avatars_info()
         'website' => 'https://github.com/sickprodigy/mybb_avatar-gallery_plugin',
         'author' => 'SickProdigy',
         'authorsite' => 'https://www.sickgaming.net',
-        'version' => '1.0.2',
+        'version' => '1.0.3',
         'compatibility' => '18*',
         'license' => 'GPL-3.0-only'
     );
@@ -58,6 +58,7 @@ function default_avatars_install()
 {
     default_avatars_remove_settings();
     default_avatars_ensure_settings();
+    default_avatars_ensure_task();
 }
 
 function default_avatars_ensure_settings()
@@ -106,9 +107,40 @@ function default_avatars_ensure_settings()
     rebuild_settings();
 }
 
-function default_avatars_uninstall() { default_avatars_remove_settings(); rebuild_settings(); }
-function default_avatars_activate() { default_avatars_ensure_settings(); }
+function default_avatars_uninstall()
+{
+    global $db;
+    default_avatars_remove_settings();
+    $db->delete_query("tasks", "file='default_avatars'");
+    $db->delete_query("datacache", "title='default_avatars_job'");
+    rebuild_settings();
+}
+function default_avatars_activate() { default_avatars_ensure_settings(); default_avatars_ensure_task(); }
 function default_avatars_deactivate() {}
+
+function default_avatars_ensure_task()
+{
+    global $db, $cache;
+    if(!method_exists($db, "table_exists") || !$db->table_exists("tasks")) { return; }
+    $tid = (int)$db->fetch_field($db->simple_select("tasks", "tid", "file='default_avatars'", array("limit" => 1)), "tid");
+    if(!$tid) {
+        $db->insert_query("tasks", array(
+            "title" => "Avatar Gallery Queue",
+            "description" => "Processes queued Avatar Gallery repair and randomization jobs.",
+            "file" => "default_avatars",
+            "minute" => "*", "hour" => "*", "day" => "*", "month" => "*", "weekday" => "*",
+            "nextrun" => TIME_NOW + 60, "lastrun" => 0, "enabled" => 1, "logging" => 1, "locked" => 0
+        ));
+    } else {
+        $db->update_query("tasks", array(
+            "title" => "Avatar Gallery Queue",
+            "description" => "Processes queued Avatar Gallery repair and randomization jobs.",
+            "minute" => "*", "hour" => "*", "day" => "*", "month" => "*", "weekday" => "*",
+            "enabled" => 1, "logging" => 1
+        ), "tid=".$tid, 1);
+    }
+    if(isset($cache)) { $cache->update_tasks(); }
+}
 
 function default_avatars_remove_settings()
 {
@@ -174,7 +206,7 @@ function default_avatars_save_selection()
     $db->update_query('users', array(
         'avatar' => $db->escape_string($avatar['public_path']),
         'avatardimensions' => (int)$dimensions[0].'|'.(int)$dimensions[1],
-        'avatartype' => 'default_avatar'
+        'avatartype' => 'gallery'
     ), "uid='".(int)$mybb->user['uid']."'");
     require_once MYBB_ROOT.'inc/functions_upload.php';
     remove_avatars((int)$mybb->user['uid']);
@@ -204,7 +236,7 @@ function default_avatars_assign_registration_avatar(&$datahandler)
 
     $datahandler->user_insert_data['avatar'] = $db->escape_string($avatar['public_path']);
     $datahandler->user_insert_data['avatardimensions'] = (int)$dimensions[0].'|'.(int)$dimensions[1];
-    $datahandler->user_insert_data['avatartype'] = 'default_avatar';
+    $datahandler->user_insert_data['avatartype'] = 'gallery';
 }
 
 function default_avatars_avatar_pool()
@@ -228,9 +260,28 @@ function default_avatars_random_avatar($avatars = null)
     return $avatars[array_rand($avatars)];
 }
 
+function default_avatars_randomize_users($users, $replacements = null)
+{
+    global $db;
+    if($replacements === null) { $replacements = default_avatars_avatar_pool(); }
+    $updated = 0;
+    foreach($users as $user) {
+        $avatar = default_avatars_random_avatar($replacements);
+        $dimensions = $avatar ? @getimagesize($avatar["absolute"]) : false;
+        if(!$dimensions) { continue; }
+        $db->update_query("users", array(
+            "avatar" => $db->escape_string($avatar["public_path"]),
+            "avatardimensions" => (int)$dimensions[0]."|".(int)$dimensions[1],
+            "avatartype" => "gallery"
+        ), "uid=".(int)$user["uid"], 1);
+        ++$updated;
+    }
+    return $updated;
+}
+
 function default_avatars_broken_gallery_avatar($avatar, $avatar_type, $config = null)
 {
-    if($avatar_type !== 'default_avatar') { return false; }
+    if(!in_array($avatar_type, array('gallery', 'default_avatar', 'default_av'), true)) { return false; }
     if($config === null) { $config = default_avatars_config(); }
     if(!$config) { return false; }
     $path = parse_url(html_entity_decode((string)$avatar, ENT_QUOTES, 'UTF-8'), PHP_URL_PATH);
@@ -238,6 +289,20 @@ function default_avatars_broken_gallery_avatar($avatar, $avatar_type, $config = 
     $prefix = trim($config['url_path'], '/').'/';
     if(strncmp($path, $prefix, strlen($prefix)) !== 0) { return false; }
     return default_avatars_validate(substr($path, strlen($prefix)), $config) === false;
+}
+
+function default_avatars_avatar_needs_repair($avatar, $avatar_type, $config = null)
+{
+    $avatar = trim((string)$avatar);
+    if($avatar === "") { return true; }
+    if(default_avatars_broken_gallery_avatar($avatar, $avatar_type, $config)) { return true; }
+
+    $path = parse_url(html_entity_decode($avatar, ENT_QUOTES, "UTF-8"), PHP_URL_PATH);
+    if($path === false || preg_match("#^https?://#i", $avatar)) { return false; }
+
+    $path = ltrim(str_replace("\\", "/", $path), "/");
+    if($path === "" || strpos($path, "../") !== false) { return true; }
+    return !is_file(MYBB_ROOT.$path);
 }
 
 function default_avatars_discover()

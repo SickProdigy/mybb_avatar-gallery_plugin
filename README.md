@@ -22,7 +22,7 @@ Users select an image at **User CP → Change Avatar**.
 
 Enable **Random avatar on registration** in the Avatar Gallery settings to replace the normal default avatar with a random validated gallery image for new registrations. Existing users and registrations that already provide a custom avatar are left unchanged.
 
-Use **Admin CP → Tools & Maintenance → Avatar Gallery Repair** to preview and repair users whose saved gallery image no longer exists. Uploaded avatars, remote avatars, and valid gallery assignments are not changed.
+Use **Admin CP → Tools & Maintenance → Avatar Gallery Repair** for three separate actions: repair saved local or gallery paths whose files went missing after a rename or removal, give users with no avatar a random gallery choice, or replace users sharing an exact saved default/specified avatar value. Operations affecting 500 users or fewer run immediately. Larger operations are queued automatically and processed by MyBB’s task system in batches of 500, with progress shown in Admin CP. External URLs are only changed when entered as an exact match.
 
 The gallery directory is the filesystem path MyBB scans for image files. The gallery URL path is the public browser path used to display those same images; both commonly use `images/avatars`, but they can differ on custom deployments.
 
