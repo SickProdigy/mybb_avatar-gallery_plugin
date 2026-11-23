@@ -211,7 +211,7 @@ default_avatars_test_assert(
 
 $info = default_avatars_info();
 default_avatars_test_assert(
-    $info['version'] === '1.0.3'
+    $info['version'] === '1.0.4'
         && $info['website'] === 'https://github.com/sickprodigy/mybb_avatar-gallery_plugin'
         && $info['authorsite'] === 'https://www.sickgaming.net',
     'plugin metadata should expose the patch version and standardized links'

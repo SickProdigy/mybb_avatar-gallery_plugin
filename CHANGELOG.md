@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.4 - 2026-11-23
+
+- Document the native group/default AdminCP grants, exact permission labels, and individual-override troubleshooting while preserving existing access restrictions.
+
 ## 1.0.3 - 2026-10-02
 
 - Fixed HTTP 500 errors when saving gallery avatars on strict MySQL/MariaDB installations by using the schema-safe `gallery` avatar type.

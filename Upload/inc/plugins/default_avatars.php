@@ -42,7 +42,7 @@ function default_avatars_info()
         'website' => 'https://github.com/sickprodigy/mybb_avatar-gallery_plugin',
         'author' => 'SickProdigy',
         'authorsite' => 'https://www.sickgaming.net',
-        'version' => '1.0.3',
+        'version' => '1.0.4',
         'compatibility' => '18*',
         'license' => 'GPL-3.0-only'
     );
